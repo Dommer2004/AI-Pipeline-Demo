@@ -1,0 +1,100 @@
+// Teachable Machine -> Arduino: blink an LED and spin a fan.
+//
+// The Python script sends one word per line over USB serial:
+//   "blink" -> LED starts blinking, fan stops
+//   "fan"   -> fan starts spinning, LED stops
+//   "both"  -> LED blinks and fan spins
+//   "stop"  -> everything off
+//
+// Wiring
+//   LED: pin 13 -> 220 ohm resistor -> LED long leg, LED short leg -> GND.
+//        (Pin 13 is also the built-in LED, so it blinks even with nothing wired.)
+//   Fan: NEVER connect a motor straight to an Arduino pin, it draws too much
+//        current. Use a transistor or motor driver:
+//        pin 9 -> 1k resistor -> base of NPN transistor (TIP120 / 2N2222)
+//        or gate of a logic-level MOSFET.
+//        Emitter/source -> GND. Collector/drain -> fan (-).
+//        Fan (+) -> 5V (or an external supply; share GND with the Arduino).
+//        Diode (1N4001) across the fan, stripe toward fan (+).
+
+const int LED_PIN = 13;
+const int FAN_PIN = 9;          // PWM pin, so the speed can be changed
+
+const long BAUD_RATE = 9600;    // Must match BAUD_RATE in the Python script
+const unsigned long BLINK_INTERVAL = 250;  // ms between LED on/off
+const int FAN_SPEED = 255;      // 0 (off) to 255 (full speed)
+
+bool ledBlinking = false;
+bool fanSpinning = false;
+bool ledOn = false;
+unsigned long lastBlinkTime = 0;
+String incoming = "";
+
+void setLed(bool blinking) {
+  ledBlinking = blinking;
+  if (!blinking) {
+    ledOn = false;
+    digitalWrite(LED_PIN, LOW);
+  }
+}
+
+void setFan(bool spinning) {
+  fanSpinning = spinning;
+  analogWrite(FAN_PIN, spinning ? FAN_SPEED : 0);
+}
+
+void handleCommand(String command) {
+  command.trim();
+  command.toLowerCase();
+
+  if (command == "blink") {
+    setLed(true);
+    setFan(false);
+  } else if (command == "fan") {
+    setLed(false);
+    setFan(true);
+  } else if (command == "both") {
+    setLed(true);
+    setFan(true);
+  } else if (command == "stop" || command == "off") {
+    setLed(false);
+    setFan(false);
+  } else {
+    Serial.print("Unknown command: ");
+    Serial.println(command);
+    return;
+  }
+
+  Serial.print("OK: ");
+  Serial.println(command);
+}
+
+void setup() {
+  pinMode(LED_PIN, OUTPUT);
+  pinMode(FAN_PIN, OUTPUT);
+  setLed(false);
+  setFan(false);
+
+  Serial.begin(BAUD_RATE);
+  Serial.println("Ready for commands: blink, fan, both, stop");
+}
+
+void loop() {
+  // Read characters until a newline, then act on the whole word
+  while (Serial.available() > 0) {
+    char c = Serial.read();
+    if (c == '\n') {
+      handleCommand(incoming);
+      incoming = "";
+    } else if (c != '\r') {
+      incoming += c;
+    }
+  }
+
+  // Blink without delay(), so serial messages are never missed
+  if (ledBlinking && millis() - lastBlinkTime >= BLINK_INTERVAL) {
+    lastBlinkTime = millis();
+    ledOn = !ledOn;
+    digitalWrite(LED_PIN, ledOn ? HIGH : LOW);
+  }
+}
