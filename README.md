@@ -1,5 +1,5 @@
 # AI-Pipeline-Demo
-// This Hardware AI Pipeline design is a motion detection system that indicates whenever suspicious activity occurs (ex. porch pirates, home invasions) then a fan blade will sound an alert for reconsiderations  
+// This Hardware AI Pipeline design is a motion detection system that indicates whenever suspicious activity occurs (ex. porch pirates, home invasions) then a fan blade will sound an alert for reconsiderations. The python code is consistent with a TensorFlow that implements a Keras 2 Engine. pyarrow basically is the systems default feature which resists when an import crash occurs in the initiating process of TensorFlow. The OpenCV constitutes as the sensor and indicator of the system, while TensorFlow Keras is trained to load all the data for the python aspect of the model. The Arduino Sketch Code on the contrary, implements the USB serial port conveyed with the Motor Fan Blade product that indicates when the LED blinks, the Fan spins and when the hardware is turned ON, or OFF. The Demo itself is mainly programmed with Python pip installer in which TensorFlow Kera is embedded in, and the Arduino IDE platform, that will operate the output based on the motion detections of the Security Camera System
 
 
 import os
